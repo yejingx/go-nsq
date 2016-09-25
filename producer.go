@@ -185,10 +185,26 @@ func (w *Producer) Publish(topic string, body []byte) error {
 	return w.sendCommand(Publish(topic, body))
 }
 
+// Publish synchronously publishes a message body to the specified channel, returning
+// an error if publish failed
+func (w *Producer) PublishChannel(topic, channel string, body []byte) error {
+	return w.sendCommand(PublishChannel(topic, channel, body))
+}
+
 // MultiPublish synchronously publishes a slice of message bodies to the specified topic, returning
 // an error if publish failed
 func (w *Producer) MultiPublish(topic string, body [][]byte) error {
 	cmd, err := MultiPublish(topic, body)
+	if err != nil {
+		return err
+	}
+	return w.sendCommand(cmd)
+}
+
+// MultiPublishChannel synchronously publishes a slice of message bodies to the specified topic, returning
+// an error if publish failed
+func (w *Producer) MultiPublishChannel(topic, channel string, body [][]byte) error {
+	cmd, err := MultiPublishChannel(topic, channel, body)
 	if err != nil {
 		return err
 	}

@@ -133,6 +133,12 @@ func Publish(topic string, body []byte) *Command {
 	return &Command{[]byte("PUB"), params, body}
 }
 
+// Publish creates a new Command to write a message to a given channel
+func PublishChannel(topic, channel string, body []byte) *Command {
+	var params = [][]byte{[]byte(topic), []byte(channel)}
+	return &Command{[]byte("PUBC"), params, body}
+}
+
 // DeferredPublish creates a new Command to write a message to a given topic
 // where the message will queue at the channel level until the timeout expires
 func DeferredPublish(topic string, delay time.Duration, body []byte) *Command {
@@ -169,6 +175,35 @@ func MultiPublish(topic string, bodies [][]byte) (*Command, error) {
 	}
 
 	return &Command{[]byte("MPUB"), params, buf.Bytes()}, nil
+}
+
+func MultiPublishChannel(topic, channel string, bodies [][]byte) (*Command, error) {
+	var params = [][]byte{[]byte(topic), []byte(channel)}
+
+	num := uint32(len(bodies))
+	bodySize := 4
+	for _, b := range bodies {
+		bodySize += len(b) + 4
+	}
+	body := make([]byte, 0, bodySize)
+	buf := bytes.NewBuffer(body)
+
+	err := binary.Write(buf, binary.BigEndian, &num)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range bodies {
+		err = binary.Write(buf, binary.BigEndian, int32(len(b)))
+		if err != nil {
+			return nil, err
+		}
+		_, err = buf.Write(b)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Command{[]byte("MPUBC"), params, buf.Bytes()}, nil
 }
 
 // Subscribe creates a new Command to subscribe to the given topic/channel
